@@ -1,3 +1,4 @@
+import streamlink
 import sys
 import xbmc
 import xbmcgui
@@ -65,7 +66,9 @@ def play_video(params):
   link = soup.find('iframe')
   link_strip = link.get('src').strip()
 
-  xbmcplugin.setResolvedUrl(_handle, True, listitem=xbmcgui.ListItem(path=link_strip))
+  #xbmcplugin.setResolvedUrl(_handle, True, listitem=xbmcgui.ListItem(path=link_strip))
+  streams = streamlink.streams(link_strip)
+  xbmcplugin.setResolvedUrl(_handle, True, listitem=xbmcgui.ListItem(path=streams['best'].to_url()))
 
 
 xbmc.log(" ".join(sys.argv), xbmc.LOGNOTICE)
