@@ -1,4 +1,3 @@
-import streamlink
 import sys
 import xbmc
 import xbmcgui
@@ -8,6 +7,7 @@ import re
 import requests
 import urllib
 import urlparse
+import base64
 from bs4 import BeautifulSoup
 
 # https://forum.kodi.tv/showthread.php?tid=324570
@@ -67,8 +67,7 @@ def play_video(params):
   link_strip = link.get('src').strip()
 
   #xbmcplugin.setResolvedUrl(_handle, True, listitem=xbmcgui.ListItem(path=link_strip))
-  streams = streamlink.streams(link_strip)
-  xbmcplugin.setResolvedUrl(_handle, True, listitem=xbmcgui.ListItem(path=streams['best'].to_url()))
+  xbmcplugin.setResolvedUrl(_handle, True, listitem=xbmcgui.ListItem(path="http://127.0.0.1:53422/base64/" + base64.urlsafe_b64encode("streamlink " + link_strip + " best").decode('utf-8')))
 
 
 xbmc.log(" ".join(sys.argv), xbmc.LOGNOTICE)
