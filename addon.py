@@ -52,7 +52,7 @@ def list_channels():
         "title": channel['title'],
         "link" : channel['link']
         }
-    xbmcplugin.addDirectoryItem(handle=_handle, url='{0}?{1}'.format(_pid, urllib.urlencode(data)), listitem=videoItem, isFolder=False)
+    xbmcplugin.addDirectoryItem(handle=_handle, url='{0}?{1}'.format(_pid, urllib.parse.urlencode(data)), listitem=videoItem, isFolder=False)
     xbmc.log("{}: {}".format(channel['title'], channel['link']), xbmc.LOGINFO)
 
   xbmcplugin.endOfDirectory(_handle)
