@@ -53,14 +53,14 @@ def list_channels():
         "link" : channel['link']
         }
     xbmcplugin.addDirectoryItem(handle=_handle, url='{0}?{1}'.format(_pid, urllib.urlencode(data)), listitem=videoItem, isFolder=False)
-    xbmc.log("{}: {}".format(channel['title'], channel['link']), xbmc.LOGNOTICE)
+    xbmc.log("{}: {}".format(channel['title'], channel['link']), xbmc.LOGINFO)
 
   xbmcplugin.endOfDirectory(_handle)
 
 
 def play_video(params):
   html = requests.get(params['link'][0], headers=headers).content
-  #xbmc.log(html, xbmc.LOGNOTICE)
+  #xbmc.log(html, xbmc.LOGINFO)
   soup = BeautifulSoup(html, 'html.parser')
 
   link = soup.find('iframe')
@@ -70,18 +70,18 @@ def play_video(params):
   xbmcplugin.setResolvedUrl(_handle, True, listitem=xbmcgui.ListItem(path=streams['best'].to_url()))
 
 
-xbmc.log(" ".join(sys.argv), xbmc.LOGNOTICE)
+xbmc.log(" ".join(sys.argv), xbmc.LOGINFO)
 
 
 def router(paramstring):
   try:
-    xbmc.log("paramstring: {}".format(paramstring), xbmc.LOGNOTICE)
+    xbmc.log("paramstring: {}".format(paramstring), xbmc.LOGINFO)
     params = urllib.parse.parse_qs(paramstring)
   except Exception as e:
     xbmc.log("type error: " + str(e), xbmc.LOGERROR)
     params = False
 
-  xbmc.log("params: {}".format(params), xbmc.LOGNOTICE)
+  xbmc.log("params: {}".format(params), xbmc.LOGINFO)
 
   if params:
     if params['action'][0] == 'play':
