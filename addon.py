@@ -1,3 +1,4 @@
+import streamlink
 import sys
 import xbmc
 import xbmcgui
@@ -6,7 +7,6 @@ import xbmcaddon
 import re
 import requests
 import urllib
-import urlparse
 import base64
 from bs4 import BeautifulSoup
 
@@ -66,8 +66,8 @@ def play_video(params):
   link = soup.find('iframe')
   link_strip = link.get('src').strip()
 
-  #xbmcplugin.setResolvedUrl(_handle, True, listitem=xbmcgui.ListItem(path=link_strip))
-  xbmcplugin.setResolvedUrl(_handle, True, listitem=xbmcgui.ListItem(path="http://127.0.0.1:53422/base64/" + base64.urlsafe_b64encode("streamlink " + link_strip + " best").decode('utf-8')))
+  streams = streamlink.streams(link_strip)
+  xbmcplugin.setResolvedUrl(_handle, True, listitem=xbmcgui.ListItem(path=streams['best'].to_url()))
 
 
 xbmc.log(" ".join(sys.argv), xbmc.LOGNOTICE)
@@ -76,7 +76,7 @@ xbmc.log(" ".join(sys.argv), xbmc.LOGNOTICE)
 def router(paramstring):
   try:
     xbmc.log("paramstring: {}".format(paramstring), xbmc.LOGNOTICE)
-    params = urlparse.parse_qs(paramstring)
+    params = urllib.parse.parse_qs(paramstring)
   except Exception as e:
     xbmc.log("type error: " + str(e), xbmc.LOGERROR)
     params = False
