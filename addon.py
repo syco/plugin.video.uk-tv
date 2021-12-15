@@ -4,10 +4,10 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
+import json
 import re
 import requests
 import urllib
-import base64
 from bs4 import BeautifulSoup
 
 # https://forum.kodi.tv/showthread.php?tid=324570
@@ -22,7 +22,51 @@ _pid = sys.argv[0]
 _handle = int(sys.argv[1])
 
 
-def list_channels():
+def add_directory_menu(data, _isPlayable, _isFolder):
+  if ('link' in data and data['link'].startswith("//")):
+    data['link'] = "https:" + data['link']
+
+  videoItem = xbmcgui.ListItem(data['title'])
+  videoItem.setInfo('video', {'title': data['title'], 'mediatype': 'video'})
+  videoItem.setProperty('IsPlayable', _isPlayable)
+  xbmcplugin.addDirectoryItem(handle=_handle, url='{0}?{1}'.format(_pid, urllib.parse.urlencode(data)), listitem=videoItem, isFolder=_isFolder)
+  xbmc.log(" ".join(data), xbmc.LOGINFO)
+
+
+def list_categories():
+  xbmcplugin.setPluginCategory(_handle, 'UK TV')
+  xbmcplugin.setContent(_handle, 'videos')
+
+  add_directory_menu({"action": "list_channels_filmon", "title": "FilmON"}, 'false', True)
+  add_directory_menu({"action": "list_channels_uktvinspain", "title": "UK TV in Spain"}, 'false', True)
+
+  xbmcplugin.endOfDirectory(_handle)
+
+
+def list_channels_filmon():
+  html = requests.get("https://www.filmon.com/tv/", headers=headers).text
+  #xbmc.log(html, xbmc.LOGINFO)
+
+  jjs = re.search(r'var\sgroups\s*=\s*(\[.*\]);', html)
+  if jjs:
+    jjt = jjs.group(1)
+    xbmc.log(jjt, xbmc.LOGINFO)
+    jj = json.loads(jjt)
+    for o in jj:
+      if (o['alias'] == 'uk-live-tv'):
+        for c in o['channels']:
+          add_directory_menu({"action": "play_video_filmon", "title": c['title'], "link" : "https://www.filmon.com/tv/channel/export?channel_id={0}&autoPlay=1".format(c['id'])}, 'true', False)
+
+  xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_TITLE)
+  xbmcplugin.endOfDirectory(_handle)
+
+
+def play_video_filmon(params):
+  streams = streamlink.streams(params['link'][0])
+  xbmcplugin.setResolvedUrl(_handle, True, listitem=xbmcgui.ListItem(path=streams['best'].to_url()))
+
+
+def list_channels_uktvinspain():
   xbmcplugin.setPluginCategory(_handle, 'UK TV')
   xbmcplugin.setContent(_handle, 'videos')
 
@@ -30,8 +74,8 @@ def list_channels():
       {"title": "BBC One", "link": "https://uktvinspain.com/index.php/live-uk-tv-streams/bbc-live-streams/bbc-one-live-stream-bbc-one-live-streaming-bbc-one-online/"},
       {"title": "BBC Two", "link": "https://uktvinspain.com/index.php/live-uk-tv-streams/bbc-live-streams/bbc-two-live-stream-bbc-two-live-streaming/"},
       {"title": "BBC Four", "link": "https://uktvinspain.com/index.php/live-uk-tv-streams/bbc-live-streams/bbc-four-live-stream-bbc-four-live-streaming/"},
-      {"title": "Cbeebies", "link": "https://uktvinspain.com/index.php/live-uk-tv-streams/bbc-live-streams/cbeebies-live-stream-cbeebies-live-streaming/"},
       {"title": "BBC News", "link": "https://uktvinspain.com/index.php/live-uk-tv-streams/bbc-live-streams/bbc-news-live-stream-bbc-news-live-streaming/"},
+      {"title": "Cbeebies", "link": "https://uktvinspain.com/index.php/live-uk-tv-streams/bbc-live-streams/cbeebies-live-stream-cbeebies-live-streaming/"},
       {"title": "ITV One", "link": "https://uktvinspain.com/index.php/live-uk-tv-streams/itv-live-streams/itv-one-live-stream-itv-one-live-streaming/"},
       {"title": "ITV Two", "link": "https://uktvinspain.com/index.php/live-uk-tv-streams/itv-live-streams/itv-two-live-stream-itv-two-live-streaming/"},
       {"title": "ITV Three", "link": "https://uktvinspain.com/index.php/live-uk-tv-streams/itv-live-streams/itv-three-live-stream-itv-three-live-streaming/"},
@@ -44,21 +88,13 @@ def list_channels():
       ]
 
   for channel in channels_list:
-    videoItem = xbmcgui.ListItem(label=channel['title'])
-    videoItem.setInfo('video', {'title': channel['title'], 'mediatype': 'video'})
-    videoItem.setProperty('IsPlayable', 'true')
-    data = {
-        "action": "play",
-        "title": channel['title'],
-        "link" : channel['link']
-        }
-    xbmcplugin.addDirectoryItem(handle=_handle, url='{0}?{1}'.format(_pid, urllib.parse.urlencode(data)), listitem=videoItem, isFolder=False)
-    xbmc.log("{}: {}".format(channel['title'], channel['link']), xbmc.LOGINFO)
+    add_directory_menu({"action": "play_video_uktvinspain", "title": channel['title'], "link" : channel['link']}, 'true', False)
 
+  xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_NONE)
   xbmcplugin.endOfDirectory(_handle)
 
 
-def play_video(params):
+def play_video_uktvinspain(params):
   html = requests.get(params['link'][0], headers=headers).content
   #xbmc.log(html, xbmc.LOGINFO)
   soup = BeautifulSoup(html, 'html.parser')
@@ -75,22 +111,30 @@ xbmc.log(" ".join(sys.argv), xbmc.LOGINFO)
 
 def router(paramstring):
   try:
-    xbmc.log("paramstring: {}".format(paramstring), xbmc.LOGINFO)
+    xbmc.log("paramstring: {0}".format(paramstring), xbmc.LOGINFO)
     params = urllib.parse.parse_qs(paramstring)
   except Exception as e:
     xbmc.log("type error: " + str(e), xbmc.LOGERROR)
     params = False
 
-  xbmc.log("params: {}".format(params), xbmc.LOGINFO)
+  xbmc.log("params: {0}".format(params), xbmc.LOGINFO)
 
   if params:
-    if params['action'][0] == 'play':
-      play_video(params)
+    if params['action'][0] == '':
+      list_categories()
+    elif params['action'][0] == 'list_channels_filmon':
+      list_channels_filmon()
+    elif params['action'][0] == 'list_channels_uktvinspain':
+      list_channels_uktvinspain()
+    elif params['action'][0] == 'play_video_filmon':
+      play_video_filmon(params)
+    elif params['action'][0] == 'play_video_uktvinspain':
+      play_video_uktvinspain(params)
     else:
-      list_channels()
+      list_categories()
 
   else:
-    list_channels()
+    list_categories()
 
 if __name__ == '__main__':
   router(sys.argv[2][1:])
